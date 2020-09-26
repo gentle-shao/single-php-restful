@@ -18,6 +18,22 @@ class MySQLQueryBuilder {
         $this->query = new Stdclass();
     }
 
+    public function primary(string $table)
+    {
+        $this->reset();
+        $this->query->base = "SHOW KEYS FROM `$table` WHERE Key_name = 'PRIMARY'";
+        $this->query->type = "show";
+        return $this;
+    }
+
+    public function exists(string $table)
+    {
+        $this->reset();
+        $this->query->base = "SHOW TABLES LIKE '$table'";
+        $this->query->type = "show";
+        return $this;
+    }
+
     public function select(string $table){
         $this->reset();
         $this->query->base = "SELECT * FROM ".$table;
@@ -76,10 +92,36 @@ switch($_SERVER["REQUEST_METHOD"])
 {
     case "GET":
         $params = explode("/",$uri);
-        $table = $params[1];
-        // $id = $params[2];
+        $table = htmlspecialchars($params[1]);
+        if(count($params) >= 3 && is_numeric($params[2])) $id = $params[2];
         $query = new MySQLQueryBuilder();
-        $result = $conn->query($query->select($table)->getQuery());
+        $result = $conn->query($query->exists($table)->getQuery());
+        if(!$result || mysqli_num_rows($result) <= 0)
+        {
+            $output['error'] = "The table doesn't exist.";
+            http_response_code(400);
+            break;
+        }
+        
+        $statement = $query->select($table);
+        if(isset($id))
+        {
+            $primary_key_query = new MySQLQueryBuilder();
+            $pk_query = $conn->query($primary_key_query->primary($table)->getQuery());
+            if(mysqli_num_rows($pk_query) == 1)
+            {
+                $primary_key = $pk_query->fetch_object()->Column_name;
+                $statement->where($primary_key,$id);
+            }
+        }
+        
+        $result = $conn->query($statement->getQuery());
+        if(isset($id) && mysqli_num_rows($result) == 0)
+        {
+            $output['error'] = "The record doesn't exist.";
+            http_response_code(404);
+            break;
+        }
         while ($row = $result->fetch_object()) $output[] = $row;
         http_response_code(200);
     break;
@@ -99,3 +141,4 @@ switch($_SERVER["REQUEST_METHOD"])
 
 header('Content-Type: application/json');
 echo json_encode($output);
+return;
