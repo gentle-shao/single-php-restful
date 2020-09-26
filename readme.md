@@ -19,6 +19,6 @@ $dbname = "DATABASE";
 
 Visit `http://HOST:PORT/DIRECTORY` to starting call Restful-APIs.
 
-## GET /table_name
+## `GET` /table_name
 
 Listing all resources in specific table.
