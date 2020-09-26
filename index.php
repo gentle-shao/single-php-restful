@@ -45,13 +45,19 @@ class MySQLQueryBuilder {
 
     public function where(string $field, string $value, string $operator = '='){
         if(!in_array($this->query->type,['select', 'delete', 'update'])) return $this;
-        $this->query->where[] = "$field $operator $value";
+        $this->query->where[] = "$field $operator '$value'";
         return $this;
     }
 
-    public function limit(int $start, int $offset){
+    public function limit(int $start){
         if(!in_array($this->query->type,['select'])) return $this;
-        $this->query->limit = " LIMIT $start, $offset";
+        $this->query->limit = " LIMIT $start";
+        return $this;
+    }
+
+    public function offset(int $start){
+        if(!in_array($this->query->type,['select'])) return $this;
+        $this->query->offset = " OFFSET $start";
         return $this;
     }
 
@@ -81,14 +87,26 @@ class MySQLQueryBuilder {
         return $this;
     }
 
+    public function order_by(string $column, string $direction = "ASC")
+    {
+        $this->query->order_by = " ORDER BY $column $direction";
+        return $this;
+    }
+
     public function getQuery(){
         $query = $this->query;
         $sql = $query->base;
         if (!empty($query->where)) {
             $sql .= " WHERE " . implode(' AND ', $query->where);
         }
+        if (isset($query->order_by)) {
+            $sql .= $query->order_by;
+        }
         if (isset($query->limit)) {
             $sql .= $query->limit;
+        }
+        if (isset($query->offset)) {
+            $sql .= $query->offset;
         }
         $sql .= ";";
         return $sql;
@@ -98,11 +116,10 @@ class MySQLQueryBuilder {
 // Processing input, outputs and request uri
 
 $input = json_decode(file_get_contents("php://input"));
-$uri = str_replace(dirname($_SERVER['SCRIPT_NAME']),'',$_SERVER['REQUEST_URI']);
+$uri = strtok(str_replace(dirname($_SERVER['SCRIPT_NAME']),'',$_SERVER['REQUEST_URI']), '?');
 $output = [];
 
 // Processing paramaters
-
 $params = explode("/",$uri);
 if(count($params) >= 2 && strlen($params[1]) > 0)
 {
@@ -140,8 +157,26 @@ if(isset($usable)){
                     $statement->where($primary_key,$id);
                 }
             }
-            
+
+            if(isset($_GET['limit']) && is_numeric($_GET['limit'])) $statement->limit($_GET['limit']);
+            if(isset($_GET['limit']) && isset($_GET['offset']) && is_numeric($_GET['offset'])) $statement->offset($_GET['offset']);
+            if(isset($_GET['page']) && isset($_GET['per_page']) && is_numeric($_GET['page']) && is_numeric($_GET['per_page'])) $statement->limit($_GET['per_page'])->offset($_GET['page']*$_GET['per_page']);
+            if(isset($_GET['sortby'])) $statement->order_by($_GET['sortby'],(isset($_GET['order']) ? $_GET['order'] : null));
+
+            foreach($_GET as $key => $value)
+            {
+                if(in_array($key,['limit','offset','sortby','order','page','per_page'])) continue;
+                $statement->where($key,$value);
+            }
+
             $result = $conn->query($statement->getQuery());
+            if(!$result)
+            {
+                $output['error'] = "Unable to get resource. Error message: ".mysqli_error($conn);
+                http_response_code(422);
+                break;
+            }
+
             if(isset($id) && mysqli_num_rows($result) == 0)
             {
                 $output['error'] = "The record doesn't exist.";
