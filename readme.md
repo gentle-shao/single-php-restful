@@ -23,6 +23,15 @@ Visit `http://HOST:PORT/DIRECTORY` to starting call Restful-APIs.
 
 Listing all resources in specific table.
 
+Available filter paramaters:
+| Paramater      | Description |
+| ----------- | ----------- |
+| ?limit=`10`      | Specifc the number of results       |
+| ?offset=`10`   | Specifc the offset number of results        |
+| ?page=`1`&per_page=`10`   | Specific the number of page index(starts from 0) and number per page |
+| ?sortby=`column`&order=`desc`   | Order by `column` and sort by `desc` |
+| ?`column`=`value`   | Filtering value of specific column |
+
 Example response:
 ```
 [
