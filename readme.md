@@ -3,6 +3,10 @@
 This project used .htaccess rewrite module to make restful API in single PHP file.
 Following the rules of Restful API includes endpoint, HTTP Request Methods, Filtering, HTTP Status Code and error handling.
 
+# Requirement
+
+This project assumes that your table has only one primary key, using MySQL database and running on an apache web server.
+
 # Install
 
 Make sure your Apache rewrite module is installed and enabled and just put all files in the same directory.(Including `.htaccess` file).
