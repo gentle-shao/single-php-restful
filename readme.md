@@ -22,3 +22,25 @@ Visit `http://HOST:PORT/DIRECTORY` to starting call Restful-APIs.
 ## `GET` /table_name
 
 Listing all resources in specific table.
+
+Example response:
+```
+[
+    {
+        "person_id": "2",
+        "person_name": "Person B"
+    },
+    {
+        "person_id": "3",
+        "person_name": "Person C"
+    },
+    {
+        "person_id": "4",
+        "person_name": "Person D"
+    },
+    {
+        "person_id": "5",
+        "person_name": "ABC1023"
+    }
+]
+```
